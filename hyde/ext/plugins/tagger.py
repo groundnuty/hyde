@@ -28,6 +28,23 @@ class Tag(Expando):
         """
         self.name = name
         self.resources = []
+        self.in_relations = {}
+        self.out_relations = {}
+
+    def is_leaf(self):
+        return len(self.in_relations)==0
+
+    def relate_to_tag(self,tag,relation_name):
+        #add relation from this tag to its parent
+        tag.__create_relation(relation_name,self.out_relations)
+        #add relation from parent to this tag
+        self.__create_relation(relation_name,tag.in_relations)
+
+    def __create_relation(self,relation_name,relations):
+        if not relation_name in relations:
+            relations[relation_name]=[ ]
+        if not self in relations[relation_name]:
+            relations[relation_name].append(self)
 
     def __repr__(self):
         return self.name
@@ -135,7 +152,14 @@ class TaggerPlugin(Plugin):
         except AttributeError:
             return
 
+        
+        new_tag_list=[]
         for tagname in taglist:
+            if not type(tagname) is str:
+                    tagname,relations=self._parse_tag_relations(tagname,tags)
+            else:
+                relations=None
+            new_tag_list.append(tagname)
             if not tagname in tags:
                 tag = Tag(tagname)
                 tags[tagname] = tag
@@ -146,9 +170,15 @@ class TaggerPlugin(Plugin):
                     tag=tag)
             else:
                 tags[tagname].resources.append(resource)
+
+            if relations:
+                self._create_tag_relations(tags[tagname],tags,relations)
+                
             if not hasattr(resource, 'tags'):
                 setattr(resource, 'tags', [])
             resource.tags.append(tags[tagname])
+
+        resource.meta.tags=new_tag_list
 
     def _generate_archives(self):
         """
@@ -166,6 +196,49 @@ class TaggerPlugin(Plugin):
         for name, config in archive_config.to_dict().iteritems():
             self._create_tag_archive(config)
 
+    def _parse_tag_relations(self,tagname,tags):
+        """
+        Parses relations of tags defined in the resource,
+        creating missing tags and adding them to the tag list if needed.
+
+        this code handles syntax such:
+        tags:
+            - sort: [author, uncle]
+            - tag: { parent: author, uncle: feature }
+
+        where [author, uncle] can be treated as short version of { author: author, uncle: uncle }
+
+        """
+        tag_with_relations=tagname.to_dict()
+        tagname,relations=tag_with_relations.popitem()
+
+        #what we expect is a dict with single entry with it - anything else is wrong
+        if len(tag_with_relations) > 0:
+            raise self.template.exception_class(
+                "Invalid definition of tag: {!r} with relation: {!r}".format(tagname,relations))
+
+        #if the entry is a list we convert it to dic 
+        if type(relations) is list:
+            tmp={}
+            for relation in relations:
+                tmp[relation]=relation
+            relations=tmp
+            
+        return tagname,relations
+
+    def _create_tag_relations(self,tag,tags,relations):
+       for relation_name in relations.keys():
+        related_tag_name=relations[relation_name]
+        if not related_tag_name in tags:
+            related_tag=Tag(related_tag_name)
+            tags[relation_name]=related_tag
+        else:
+            related_tag=tags[related_tag_name]
+        add_method(Node,
+                'walk_resources_tagged_with_%s' % related_tag_name,
+                walk_resources_tagged_with,
+                tag=tag)
+        tag.relate_to_tag(related_tag,relation_name)
 
     def _create_tag_archive(self, config):
         """
@@ -208,8 +281,10 @@ extends: false
                 "template": template,
                 "meta": meta_text
             }
+
             text = archive_text % tag_data
             archive_file = File(target.child("%s.%s" % (tagname, extension)))
             archive_file.delete()
             archive_file.write(text.strip())
             self.site.content.add_resource(archive_file)
+

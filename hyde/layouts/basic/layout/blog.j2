@@ -2,6 +2,25 @@
 
 {% block main -%}
 <article class="post">
+
+<nav class="tag_nav">
+<h2>Relations</h2>
+
+{% for relation in [ 'emotion', 'action', 'state' ] %}
+<h1>{{ site.tagger.tags[relation].name }}:</h1>
+<ul class="tagslist">
+{% for tag in site.tagger.tags[relation].in_relations[relation] %}
+<li >
+    <a class="small" href="{{ content_url('blog/tags/'~tag.name~'.html') }}">
+        {{ tag.name }}
+    </a>
+</li>
+
+{% endfor %}
+</ul>
+{% endfor %}
+</nav>
+
 <nav class="post_nav">
 <a class="backlink" href="{{ content_url(resource.node.url) }}">Back to list</a>
 <a class="prev{{' disabled' if not resource.prev_by_time }}"
@@ -46,7 +65,7 @@
 
 {% if resource.meta.tags %}
 <ul class="tags clear">
-{% for tag in resource.meta.tags %}
+{% for tag in resource.tags %}
 <li>
     <a class="small" href="{{ content_url('blog/tags/'~tag~'.html') }}">
         {{ tag }}

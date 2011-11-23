@@ -357,6 +357,56 @@ nav.post_nav{
 
 }
 
+nav.tag_nav h2 {
+        color: #666;
+    font-weight: normal;
+    font-size: 16px;
+    line-height: 24px;
+    margin-bottom: 12px;
+}
+
+nav.tag_nav h1 {
+    color: #37e;
+    text-shadow: 0px 2px 0px #fff;
+}
+
+ul.tagslist{
+    margin-bottom: 10px;
+    text-align: left;
+    list-style-type: none;
+    list-style-position: outside;
+    text-indent: 0px;
+
+    padding:0px;
+}
+
+ul.tagslist li{
+
+    padding-left:1px;
+
+}
+
+ul.tagslist a {
+        color: #999;
+    text-decoration: none;
+}
+
+nav.tag_nav{
+    background-color: #efefef;
+    position: fixed;
+    width: 124px;
+    margin-left: 642px;
+    font-size: 12px;
+    padding: 12px;
+    padding-right: 24px;
+    -moz-box-shadow: 0px 2px 4px #ccc; /* FF3.5+ */
+    -webkit-box-shadow: 0px 2px 4px #ccc; /* Saf3.0+, Chrome */
+          box-shadow: 0px 2px 4px #ccc; /* Opera 10.5, IE 9.0 */
+              filter:  progid:DXImageTransform.Microsoft.dropshadow(OffX=12px, OffY=12px, Color='#ccc'); /* IE6,IE7 */
+          -ms-filter: "progid:DXImageTransform.Microsoft.dropshadow(OffX=12px, OffY=12px, Color='#ccc')"; /* IE8 */
+
+}
+
 a.backlink{
     display:block;
     line-height: 24px;
