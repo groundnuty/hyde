@@ -92,6 +92,7 @@ class Group(Expando):
         Returns group and its ancestors that the resource
         belongs to, in that order.
         """
+
         try:
             group_name = getattr(resource.meta, group.root.name)
         except AttributeError:
@@ -209,6 +210,7 @@ class GrouperPlugin(Plugin):
         if not hasattr(self.site, 'grouper'):
             self.site.grouper = {}
 
+        self.site.groups_index = {}
         for name, grouping in self.site.config.grouper.__dict__.items():
             grouping.name = name
             prev_att = 'prev_in_%s' % name
@@ -224,7 +226,7 @@ class GrouperPlugin(Plugin):
                 setattr(prev, next_att, next)
 
             for group in self.site.grouper[name].walk_groups():
-                self.site.grouper[group.name] = group #NOT_HAPPY: I found no other way to directly access groups by names from jinja ;(
+                self.site.groups_index[group.name] = group #NOT_HAPPY: I found no other way to directly access groups by names from jinja ;(
                 self._create_group_archive(group.archives,group.name)
 
             #print self.site.grouper[name]  #NOT_HAPPY: goes into recursion until stacks ends
@@ -258,12 +260,12 @@ extends: false
 %(meta)s
 ---
 
-{%% set tag = site.grouper['%(group)s'] %%}
+{%% set tag = site.groups_index['%(group)s'] %%}
 {%% set source = site.content.node_from_relative_path('%(node)s') %%}
 {%% set walker = source.walk_resources_grouped_by_%(group)s %%}
 {%% extends "%(template)s" %%}
 """
-        print groupname
+
         group_data = {
             "group": groupname,
             "node": source.name,

@@ -59,3 +59,28 @@ tagger:
             archive_extension: html
             meta:
                 listable: false
+grouper:
+    emotional_posts:
+      archives:
+            source: blog
+            target: blog/groups
+            template: tagged_posts.j2
+            archive_extension: html
+            meta:
+                listable: true
+       # Categorizes the nodes and resources
+       # based on the groups specified here.
+       # The node and resource should be tagged
+       # with the categories in their metadata
+      sorter: kind # A reference to the sorter
+      description: Articles about hyde
+      groups:
+          -
+              name: emotions
+              description: Emotions
+          -
+              name: action
+              description: Actions
+          -
+              name: state
+              description: State of mind
