@@ -19,6 +19,16 @@
 {% endfor %}
 </ul>
 {% endfor %}
+
+<h2>Groups</h2>
+{% from "macros.j2" import list_groups with context %}
+<ul class="tagslist">
+{% for group in site.grouper.values() %}
+<li>
+{{ list_groups(group) }}
+</li>
+{% endfor %}
+</ul>
 </nav>
 
 <nav class="post_nav">

@@ -38,3 +38,22 @@
 </nav>
 {%- endif %}
 {%- endmacro %}
+
+{% macro list_groups(group) -%}
+<a class="small" href="{{ content_url('blog/groups/'~group.name~'.html') }}">
+        {% if group.groups|length > 0 -%}
+         <h1>{{ group.name }}:<h1>
+        {% else -%}
+         {{ group.name }}
+         {%- endif %}
+</a>
+<ul class="tagslist">
+{% for tag in group.groups %}
+<li>
+    <a class="small" href="{{ content_url('blog/groups/'~tag.name~'.html') }}">
+        {{ tag.name }}
+    </a>
+</li>
+{% endfor %}
+</ul>
+{%- endmacro %}
