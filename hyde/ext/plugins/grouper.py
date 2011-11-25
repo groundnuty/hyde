@@ -13,6 +13,7 @@ from collections import namedtuple
 from functools import partial
 from itertools import ifilter, izip, tee, product
 from operator import attrgetter
+from hyde.fs import File, Folder
 
 
 Grouper = namedtuple('Grouper', 'group resources')
@@ -30,9 +31,13 @@ class Group(Expando):
         self.root = parent.root if parent else self
         self.groups = []
         self.sorter = getattr(grouping, 'sorter', None)
+        self.archives = getattr(grouping, 'archives', None).to_dict() if getattr(grouping, 'archives', None) else None #NOT_HAPPY: but conversion to dict from expando is required
         if hasattr(parent, 'sorter'):
             self.sorter = parent.sorter
         super(Group, self).__init__(grouping)
+
+        if hasattr(parent, 'archives'):
+            self.archives = parent.archives
 
         add_method(Node,
                 'walk_%s_groups' % self.name,
@@ -56,7 +61,9 @@ class Group(Expando):
         If the key is groups, creates group objects instead of
         regular expando objects.
         """
-        if key == "groups":
+        if key == "archives":
+            pass #NOT_HAPPY: but otherwise expando will overite the archive dict with expando type object ;(
+        elif key == "groups":
             self.groups = [Group(group, parent=self) for group in value]
         else:
             return super(Group, self).set_expando(key, value)
@@ -215,3 +222,56 @@ class GrouperPlugin(Plugin):
             for prev, next in pairwalk(walker):
                 setattr(next, prev_att, prev)
                 setattr(prev, next_att, next)
+
+            for group in self.site.grouper[name].walk_groups():
+                self.site.grouper[group.name] = group #NOT_HAPPY: I found no other way to directly access groups by names from jinja ;(
+                self._create_group_archive(group.archives,group.name)
+
+            #print self.site.grouper[name]  #NOT_HAPPY: goes into recursion until stacks ends
+
+    def _create_group_archive(self, config,groupname):
+        """
+        Generates archives for each tag based on the given configuration.
+        """
+        if not 'template' in config:
+            raise self.template.exception_class(
+                "No Template specified in grouper configuration.")
+        content = self.site.content.source_folder
+        source = Folder(config.get('source', ''))
+        target = content.child_folder(config.get('target', 'groups'))
+        if not target.exists:
+            target.make()
+
+        # Write meta data for the configuration
+        meta = config.get('meta', {})
+        meta_text = u''
+        if meta:
+            import yaml
+            meta_text = yaml.dump(meta, default_flow_style=False)
+
+        extension = config.get('extension', 'html')
+        template = config['template']
+
+        archive_text = u"""
+---
+extends: false
+%(meta)s
+---
+
+{%% set tag = site.grouper['%(group)s'] %%}
+{%% set source = site.content.node_from_relative_path('%(node)s') %%}
+{%% set walker = source.walk_resources_grouped_by_%(group)s %%}
+{%% extends "%(template)s" %%}
+"""
+        print groupname
+        group_data = {
+            "group": groupname,
+            "node": source.name,
+            "template": template,
+            "meta": meta_text
+        }
+        text = archive_text % group_data
+        archive_file = File(target.child("%s.%s" % (groupname, extension)))
+        archive_file.delete()
+        archive_file.write(text.strip())
+        self.site.content.add_resource(archive_file)
